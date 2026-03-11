@@ -1,5 +1,7 @@
+use std::str::FromStr;
+
 use monty::MontyException;
-use rustler::{Encoder, Env, Term};
+use rustler::{Encoder, Env, MapIterator, Term};
 
 mod atoms {
     rustler::atoms! {
@@ -101,4 +103,47 @@ pub fn exception_to_term<'a>(env: Env<'a>, exc: MontyException) -> Result<Term<'
         )
         .map_err(|_| "failed to build error map".to_string())?;
     Ok(map)
+}
+
+/// Build a `MontyException` from an Elixir error map `%{type: String, message: String}`.
+pub fn make_exception<'a>(env: Env<'a>, term: Term<'a>) -> Result<MontyException, String> {
+    let iter =
+        MapIterator::new(term).ok_or_else(|| "error info must be a map".to_string())?;
+
+    let mut type_str: Option<String> = None;
+    let mut message_str: Option<String> = None;
+
+    for (key, value) in iter {
+        let key_atom = key
+            .decode::<rustler::types::atom::Atom>()
+            .map_err(|_| "error map keys must be atoms".to_string())?;
+        let key_name = key_atom
+            .to_term(env)
+            .atom_to_string()
+            .map_err(|_| "failed to decode atom name".to_string())?;
+
+        match key_name.as_str() {
+            "type" => {
+                type_str = Some(
+                    value
+                        .decode::<String>()
+                        .map_err(|_| "type must be a string".to_string())?,
+                );
+            }
+            "message" => {
+                message_str = Some(
+                    value
+                        .decode::<String>()
+                        .map_err(|_| "message must be a string".to_string())?,
+                );
+            }
+            _ => {}
+        }
+    }
+
+    let type_name = type_str.unwrap_or_else(|| "RuntimeError".to_string());
+    let exc_type =
+        monty::ExcType::from_str(&type_name).unwrap_or(monty::ExcType::RuntimeError);
+
+    Ok(MontyException::new(exc_type, message_str))
 }
