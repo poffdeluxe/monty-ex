@@ -1,0 +1,11 @@
+[package]
+name = "monty_nif"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+rustler = { version = "0.37", features = ["big_integer"] }
+monty = { git = "https://github.com/pydantic/monty", tag = "v0.0.8" }
