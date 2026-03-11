@@ -35,6 +35,11 @@ end
 script = MontyEx.Script.new("x + 1", script_name: "agent.py")
 {:ok, %{result: 2, stdout: ""}} = MontyEx.run(script, inputs: %{"x" => 1})
 
+# External function callbacks
+{:ok, %{result: 42, stdout: ""}} =
+  MontyEx.run("result = double(21)\nresult",
+    external_functions: %{"double" => fn [x], _kwargs -> x * 2 end})
+
 # Bang variant raises on error
 %{result: 3} = MontyEx.run!("1 + 2")
 ```
@@ -43,6 +48,7 @@ script = MontyEx.Script.new("x + 1", script_name: "agent.py")
 
 - **Execute Python code** from Elixir via `MontyEx.run/2`
 - **Pass input variables** — inject Elixir values into the Python scope
+- **External function callbacks** — Python code can call Elixir functions
 - **Resource limits** — cap memory, duration, allocations, and recursion depth
 - **Stdout capture** — collect `print()` output
 - **Reusable scripts** — wrap code with a custom `script_name` via `MontyEx.Script`
@@ -63,6 +69,7 @@ Executes Python code and returns `{:ok, %{result: term, stdout: string}}` or `{:
 
 - `:inputs` — `%{String.t() => term}` map of variables to inject (atom keys are converted to strings)
 - `:limits` — `%MontyEx.ResourceLimits{}` struct
+- `:external_functions` — `%{String.t() => (args, kwargs -> term)}` map of functions that Python code can call. Each function receives a list of positional args and a map of keyword args with string keys. Elixir exceptions raised in callbacks propagate as Python exceptions.
 
 ### `MontyEx.run!/2`
 
@@ -125,7 +132,6 @@ When passing Elixir maps to Python, atom keys are automatically converted to str
 
 ## TODO
 
-- External function callbacks (Python calling Elixir functions)
 - REPL mode (`MontyRepl`)
 - State serialization/deserialization
 - Type checking mode
