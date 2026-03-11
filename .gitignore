@@ -1,0 +1,16 @@
+/_build/
+/cover/
+/deps/
+/doc/
+/.fetch
+erl_crash.dump
+*.ez
+monty_ex-*.tar
+/tmp/
+
+# Native NIF artifacts
+/priv/native/
+native/monty_nif/target/
+
+# Local docs
+BRIEFING.md
