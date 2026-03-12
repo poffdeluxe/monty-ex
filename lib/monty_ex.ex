@@ -170,6 +170,64 @@ defmodule MontyEx do
     Map.get(@elixir_to_python_exc, e.__struct__, "RuntimeError")
   end
 
+  @type type_check_opt ::
+          {:stubs, String.t()}
+          | {:format, :full | :concise | :json | :pylint | :gitlab | :github}
+
+  @doc """
+  Perform static type checking on Python code.
+
+  Accepts either a code string or a `%MontyEx.Script{}` struct.
+
+  ## Options
+
+    * `:stubs` - A string of type stub definitions (`.pyi` style) to use during type checking.
+    * `:format` - The diagnostic output format. One of `:full`, `:concise`, `:json`,
+      `:pylint`, `:gitlab`, `:github`. Defaults to `:full`.
+
+  ## Examples
+
+      iex> MontyEx.type_check("x: int = 1")
+      :ok
+
+      iex> {:error, %MontyEx.TypingError{}} = MontyEx.type_check("x: int = 'hello'")
+
+  """
+  @spec type_check(String.t() | Script.t(), [type_check_opt()]) ::
+          :ok | {:error, MontyEx.TypingError.t()}
+  def type_check(code_or_script, opts \\ [])
+
+  def type_check(code, opts) when is_binary(code) do
+    do_type_check(code, "main.py", opts)
+  end
+
+  def type_check(%Script{code: code, script_name: script_name}, opts) do
+    do_type_check(code, script_name, opts)
+  end
+
+  @doc """
+  Perform static type checking on Python code, raising on type errors.
+
+  Same as `type_check/2` but raises `MontyEx.TypingError` on failure.
+  """
+  @spec type_check!(String.t() | Script.t(), [type_check_opt()]) :: :ok
+  def type_check!(code_or_script, opts \\ []) do
+    case type_check(code_or_script, opts) do
+      :ok -> :ok
+      {:error, exception} -> raise exception
+    end
+  end
+
+  defp do_type_check(code, script_name, opts) do
+    stubs = Keyword.get(opts, :stubs, nil)
+    format = Keyword.get(opts, :format, :full)
+
+    case Native.type_check(code, stubs, format, script_name) do
+      {:ok, :no_errors} -> :ok
+      {:error, %{diagnostics: diags}} -> {:error, %MontyEx.TypingError{diagnostics: diags}}
+    end
+  end
+
   defp to_exception(%{kind: :syntax, type: type, message: message, traceback: traceback}) do
     %MontyEx.SyntaxError{type: type, message: message, traceback: traceback}
   end

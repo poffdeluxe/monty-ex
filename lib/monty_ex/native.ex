@@ -13,4 +13,7 @@ defmodule MontyEx.Native do
 
   @doc false
   def resume_run(_resource, _resume_result), do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
+  def type_check(_code, _stubs, _format, _script_name), do: :erlang.nif_error(:nif_not_loaded)
 end
