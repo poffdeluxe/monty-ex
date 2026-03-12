@@ -2,6 +2,7 @@ mod convert;
 mod error;
 mod execution;
 mod limits;
+mod type_check;
 
 use rustler::{Encoder, Env, NifResult, ResourceArc, Term};
 

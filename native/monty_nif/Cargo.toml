@@ -9,3 +9,4 @@ crate-type = ["cdylib"]
 [dependencies]
 rustler = { version = "0.37", features = ["big_integer"] }
 monty = { git = "https://github.com/pydantic/monty", tag = "v0.0.8" }
+monty_type_checking = { git = "https://github.com/pydantic/monty", tag = "v0.0.8" }
